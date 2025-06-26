@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requests Panel</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .table-container {
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .table-container table {
+            background-color: #1e1e1e !important;
+            color: white !important;
+            width: 100%;
+        }
+        .table-container table thead {
+            background: linear-gradient(to right, #007bff, #6610f2) !important;
+            color: white !important;
+            font-size: 1.1rem;
+        }
+        .progress {
+            background-color: #333;
+        }
+        .progress-bar {
+            background-color: #6200ea;
+        }
+
+        #logContainer {
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }  
+       
+        .table-container {
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+   
+        .table-container table {
+            background-color: #1e1e1e !important;
+            color: white !important;
+            width: 100%; 
+        }
+
+        .table-container table thead {
+            background: linear-gradient(to right, #007bff, #6610f2) !important;
+            color: white !important;
+            font-size: 1.1rem; 
+        }
+
+ 
+        .table-container table th, 
+        .table-container table td {
+            text-align: center !important;
+            vertical-align: middle !important;
+            padding: 12px !important;
+            border-bottom: 1px solid #444 !important;
+        }
+
+        .table-container table tbody tr {
+            background-color: #1e1e1e !important;
+        }
+
+        .table-container table tbody tr:hover {
+            background-color: #292929 !important;
+        }
+
+    
+        .table-container .btn-primary {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+        }
+
+        .table-container .btn-danger {
+            background-color: #d32f2f !important;
+            border-color: #d32f2f !important;
+        }
+
+      
+        .progress {
+            background-color: #333;
+        }
+
+        .progress-bar {
+            background-color: #6200ea;
+        }
+
+        .badge {
+            font-size: 0.9rem;
+        }
+
+        #newRequestBtn, #syncRequestsBtn {
+            background: linear-gradient(to left, #007bff, #6610f2) !important;
+            color: white !important;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        #newRequestBtn:hover, #syncRequestsBtn:hover {
+            background: linear-gradient(to left, #0056b3, #520dc2) !important;
+            transform: scale(1.05);
+        }
+
+        
+    </style>
+</head>
+<body class="container py-5">
+    <h1 class="text-center mb-4">Requests Panel</h1>
+    {{ if .error }}
+    <div class="alert alert-danger">
+    {{ .error }}
+    </div>
+    {{ end }}
+    <div class="row">
+        <div class="col-md-6">
+            <h3><i class="bi bi-list-check"></i> Requests</h3>
+
+            <div class="table-container">
+            <button id="syncRequestsBtn" class="btn btn-primary mb-3">
+                <i class="bi bi-arrow-clockwise"></i> Sync All Assets
+            </button>
+        
+                <table id="TableDetails">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                     <tbody>
+                    {{range .requests}}
+                        <tr>
+                            <td>{{.ID}}</td>   
+                            <td>{{.Date.Format "2006-01-02"}}</td>                  
+                            <td>
+                            {{if eq .Status 0}}Pendiente
+                            {{else if eq .Status 1}}In Procesing
+                            {{else if eq .Status 2}}Complete
+                            {{else if eq .Status 3}}Upload                            
+                            {{else if eq .Status 4}}Finish
+                            {{else if eq .Status 5}}Restart
+                            {{else if eq .Status 5}}Restart
+                            {{else}}Unknown{{end}}             
+                            </td>
+                           <td>
+                                <button class="btn btn-primary btn-sm text-light px-3" onclick="viewRequest({{ .ID }})">
+                                    <i class="bi bi-eye"></i>
+                                </button>                              
+                                <button class="btn  btn-secondary btn-sm text-light px-3" onclick="retryErrors({{ .ID }})">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm text-light px-3" onclick="cancelRequest({{ .ID }})">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    {{end}}
+                </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>
+                    <i class="bi bi-cloud-download-fill"></i> Upload Status
+                </h3>
+                <a href="/search" id="newRequestBtn"  class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> New Request
+                </a>
+            </div>
+            <div id="requestDetail">
+                        <p><strong>Request ID:</strong> <span id="requestId">-</span></p>
+                        <p><strong>Pending:</strong> <span id="pendingCount">0</span></p>
+                        <p><strong>Processing:</strong> <span id="processingCount">0</span></p>
+                        <p><strong>Duplicate:</strong> <span id="duplicateCount">0</span></p>
+                        <p><strong>Error:</strong> <span id="errorCount">0</span></p>
+                        <p><strong>Completed:</strong> <span id="completedCount">0</span></p>
+                        <p><strong>Total Files:</strong> <span id="totalCount">0</span></p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress">
+                <div id="barraProgreso" class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-4">
+        <i class="bi bi-terminal"></i> Logs 
+    </h3>
+
+
+    <button class="btn btn-danger" onclick="clearLogs()">Delete Log</button>
+
+    <div id="logContainer">Loading logs...</div>
+    <hr>
+    <div style="text-align: center; width: 100%;">
+    <small style="font-size: 14px;">Current User: {{ .user }}</small>
+    | <a href="/delete-token" style="font-size: 14px; color: red; text-decoration: none;">Delete Token And New User</a>
+    </div>
+
+     <script>
+        let activeRequestId = null;
+        let requestInterval = null;
+
+        function viewRequest(id) {
+            // Stop previous updates if switching requests
+            if (activeRequestId !== id) {
+                activeRequestId = id;
+                if (requestInterval) clearTimeout(requestInterval);
+            }
+
+            fetch(`/requests/${id}/status`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("requestId").innerText = data.request_id;
+                    document.getElementById("pendingCount").innerText = data.pending;
+                    document.getElementById("processingCount").innerText = data.processing;
+                    document.getElementById("duplicateCount").innerText = data.duplicate;
+                    document.getElementById("errorCount").innerText = data.error;
+                    document.getElementById("completedCount").innerText = data.completed;
+                    document.getElementById("totalCount").innerText = data.total;
+
+                    let progress = data.total > 0 ? ((data.completed + data.error + data.duplicate) / data.total) * 100 : 0;
+                    let progressBar = document.getElementById("barraProgreso");
+                    progressBar.style.width = progress.toFixed(2) + "%";
+                    progressBar.innerText = progress.toFixed(2) + "%";
+
+                    // Schedule the next update only if the same request is still active
+                    requestInterval = setTimeout(() => {
+                        if (activeRequestId === id) {
+                            viewRequest(id);
+                        }
+                    }, 5000);
+                })
+                .catch(error => {
+                    console.error("Error request:", error);
+                    document.getElementById('requestDetail').innerHTML = `<p class="text-danger">Error details request.</p>`;
+                });
+        }
+
+        function loadLogs() {
+            fetch('/logs')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("logContainer").innerText = data;
+                })
+                .catch(error => console.error("Error loading logs:", error));
+        }
+
+        function clearLogs() {
+            if (confirm("Are you sure you want to delete the logs?")) {
+                fetch('/logs', { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => alert(data.message))
+                    .catch(error => console.error('Error deleting logs:', error));
+            }
+        }
+
+        function retryErrors(id) {
+            if (!confirm("Are you sure you want to retry only failed files?")) return;
+
+            fetch(`/requests/${id}/retry-errors`, { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("Error: " + data.error);
+                    } else {
+                        alert("Retrying failed uploads!");
+                        viewRequest(id);
+                    }
+                })
+                .catch(error => console.error("Error retrying failed uploads:", error));
+        }
+
+        document.getElementById("syncRequestsBtn").addEventListener("click", function() {
+            if (!confirm("Are you sure you want to sync all pending uploads?")) return;
+
+            fetch("/upload", { method: "GET" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("Error: " + data.error);
+                    } else {
+                        alert("Syncing process started successfully!");
+                    }
+                })
+                .catch(error => console.error("Error syncing uploads:", error));
+        });
+
+        setInterval(loadLogs, 5000);
+    </script>
+
+
+</body>
+</html>
